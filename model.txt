@@ -1,0 +1,56 @@
+✅User =>     { name, email, phoneNumber, role, password, isVerified, verificationToken, verificationTokenExpires, resetPasswordToken, resetPasswordExpires, isDeleted}
+
+✅Category =>     { name, slug, isDeleted }
+
+✅SubCategory =>      { name, slug, category, isDeleted }
+
+✅Product =>      { name, slug, description, brand, price, discountPrice, stock, images, colors, category, subCategory, averageRating, numReviews, isFeatured, isActive, isDeleted }
+
+✅Wishlist =>     { user, products }
+
+✅Cart =>{
+    user,
+    items: [
+        {
+            product,
+            quantity,
+            price,
+            subTotal
+        }
+    ],
+
+    totalPrice
+}
+
+✅Coupon =>       { code, discount, expireDate, usageLimit, usedCount, isDeleted }
+
+✅Order =>{
+    user,
+    products: [
+        {
+            product,
+
+            quantity,
+
+            price
+        }
+    ],
+    shippingAddress,
+    totalPrice,
+    paymentMethod,
+    paymentStatus,
+    orderStatus,
+    coupon,
+    phoneNumber,
+    notes
+}
+
+✅Banner =>   { title, image, link, isDeleted }
+
+✅FAQ =>  { question , answer , isDeleted }
+
+✅Testimonial =>  { name, message, isShow}
+
+✅Contact =>  { name, email, phoneNumber, subject, message, isRead }
+
+✅Store =>   { name, logo, phoneNumber, email, address, facebook, instagram, tiktok, shippingPolicy, returnPolicy}
