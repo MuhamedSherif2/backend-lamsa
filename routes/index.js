@@ -2,9 +2,9 @@ const router = require("express").Router();
 
 router.use("/auth", require("./auth.routes"));
 router.use("/users", require("./user.routes"));
-// router.use("/categories", require("./category.routes"));
-// router.use("/sub-categories", require("./subCategory.routes"));
-// router.use("/products", require("./product.routes"));
+router.use("/categories", require("./category.routes"));
+router.use("/sub-categories", require("./subCategory.routes"));
+router.use("/products", require("./product.routes"));
 // router.use("/wishlist", require("./wishlist.routes"));
 // router.use("/cart", require("./cart.routes"));
 // router.use("/coupons", require("./coupon.routes"));

@@ -97,9 +97,9 @@ addStoreSettings✅
 updateStoreSettings (Admin)✅
 
 1. auth.controller.js✅
-2. user.controller.js
-3. category.controller.js
-4. subCategory.controller.js
+2. user.controller.js✅
+3. category.controller.js✅
+4. subCategory.controller.js✅
 5. product.controller.js
 6. wishlist.controller.js
 7. cart.controller.js
