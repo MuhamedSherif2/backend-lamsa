@@ -1,34 +1,174 @@
 const asyncHandler = require("../middlewares/asyncHandler");
 
-const getWishlist = asyncHandler(async (req, res, next) => {
+const Wishlist = require("../models/Wishlist");
+const Product = require("../models/Product");
 
-    res.status(200).json({
+// ==================== Get Wishlist ====================
+
+const getWishlist = asyncHandler(async (req, res) => {
+
+    const wishlist = await Wishlist.findOne({
+        user: req.user._id
+    }).populate({
+        path: "products",
+        select: "name slug description price discountPrice images category subCategory averageRating"
+    });
+
+    // User has no wishlist yet
+    if (!wishlist) {
+        return res.status(200).json({
+            success: true,
+            count: 0,
+            data: []
+        });
+    }
+
+    return res.status(200).json({
         success: true,
-        // count: categories.length,
-        // data: categories
+        count: wishlist.products.length,
+        data: wishlist.products
     });
 });
 
-const addToWishlist = asyncHandler(async (req, res, next) => {
 
-    res.status(200).json({
+// ==================== Add To Wishlist ====================
+
+const addToWishlist = asyncHandler(async (req, res) => {
+
+    const { productId } = req.body;
+
+    if (!productId) {
+        return res.status(400).json({
+            success: false,
+            message: "Product ID is required"
+        });
+    }
+
+    // Check Product
+    const product = await Product.findOne({
+        _id: productId,
+        isDeleted: false,
+        isActive: true
+    });
+
+    if (!product) {
+        return res.status(404).json({
+            success: false,
+            message: "Product not found"
+        });
+    }
+
+    // Find User Wishlist
+    let wishlist = await Wishlist.findOne({
+        user: req.user._id
+    });
+
+    // Create Wishlist if doesn't exist
+    if (!wishlist) {
+
+        wishlist = await Wishlist.create({
+            user: req.user._id,
+            products: [productId]
+        });
+
+        await wishlist.populate({
+            path: "products",
+            select: "name slug description price discountPrice images category subCategory averageRating"
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: "Product added to wishlist",
+            data: wishlist
+        });
+    }
+
+    // Check if product already exists
+    const productExists = wishlist.products.some(
+        id => id.toString() === productId.toString()
+    );
+
+    if (productExists) {
+        return res.status(400).json({
+            success: false,
+            message: "Product already exists in wishlist"
+        });
+    }
+
+    // Add Product
+    wishlist.products.push(productId);
+
+    await wishlist.save();
+
+    await wishlist.populate({
+        path: "products",
+        select: "name slug description price discountPrice images category subCategory averageRating"
+    });
+
+    return res.status(200).json({
         success: true,
-        // count: categories.length,
-        // data: categories
+        message: "Product added to wishlist",
+        data: wishlist
     });
 });
 
-const removeFromWishlist = asyncHandler(async (req, res, next) => {
 
-    res.status(200).json({
+// ==================== Remove From Wishlist ====================
+
+const removeFromWishlist = asyncHandler(async (req, res) => {
+
+    const { productId } = req.params;
+
+    if (!productId) {
+        return res.status(400).json({
+            success: false,
+            message: "Product ID is required"
+        });
+    }
+
+    const wishlist = await Wishlist.findOne({
+        user: req.user._id
+    });
+
+    if (!wishlist) {
+        return res.status(404).json({
+            success: false,
+            message: "Wishlist not found"
+        });
+    }
+
+    const productExists = wishlist.products.some(
+        id => id.toString() === productId.toString()
+    );
+
+    if (!productExists) {
+        return res.status(404).json({
+            success: false,
+            message: "Product not found in wishlist"
+        });
+    }
+
+    wishlist.products = wishlist.products.filter(
+        id => id.toString() !== productId.toString()
+    );
+
+    await wishlist.save();
+
+    await wishlist.populate({
+        path: "products",
+        select: "name slug description price discountPrice images category subCategory averageRating"
+    });
+
+    return res.status(200).json({
         success: true,
-        // count: categories.length,
-        // data: categories
+        message: "Product removed from wishlist",
+        data: wishlist
     });
 });
+
 
 module.exports = {
     getWishlist,
     addToWishlist,
-    removeFromWishlist,
-}
+    removeFromWishlist
+};
