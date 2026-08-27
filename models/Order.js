@@ -24,7 +24,12 @@ const OrderItemSchema = new mongoose.Schema(
         color: {
             type: String,
             trim: true
-        }
+        },
+        couponCode: {
+            type: String,
+            trim: true,
+            uppercase: true
+        },
     },
     {
         _id: false

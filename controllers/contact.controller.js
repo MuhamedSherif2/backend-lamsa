@@ -1,54 +1,136 @@
 const asyncHandler = require("../middlewares/asyncHandler");
 
-const createContactMessage = asyncHandler(async (req, res, next) => {
+const Contact = require("../models/Contact");
 
-    res.status(200).json({
+
+// ==================== Create Contact Message ====================
+
+const createContactMessage = asyncHandler(async (req, res) => {
+
+    const {
+        name,
+        email,
+        phoneNumber,
+        subject,
+        message
+    } = req.body;
+
+    if (!name || !email || !phoneNumber || !subject || !message) {
+        return res.status(400).json({
+            success: false,
+            message: "Name, email, phoneNumber, subject and message are required"
+        });
+    }
+
+    const contactMessage = await Contact.create({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        phoneNumber: phoneNumber.trim(),
+        subject: subject.trim(),
+        message: message.trim()
+    });
+
+    return res.status(201).json({
         success: true,
-        // count: categories.length,
-        // data: categories
+        message: "Your message has been sent successfully",
+        data: contactMessage
     });
 });
 
-const getAllContactMessages = asyncHandler(async (req, res, next) => {
 
-    res.status(200).json({
+// ==================== Get All Contact Messages ====================
+
+const getAllContactMessages = asyncHandler(async (req, res) => {
+
+    const messages = await Contact.find()
+        .sort({ isRead: 1, createdAt: -1 });
+
+    return res.status(200).json({
         success: true,
-        // count: categories.length,
-        // data: categories
+        count: messages.length,
+        data: messages
     });
 });
 
-const getContactMessageById = asyncHandler(async (req, res, next) => {
 
-    res.status(200).json({
+// ==================== Get Contact Message By ID ====================
+
+const getContactMessageById = asyncHandler(async (req, res) => {
+
+    const { id } = req.params;
+
+    const contactMessage = await Contact.findById(id);
+
+    if (!contactMessage) {
+        return res.status(404).json({
+            success: false,
+            message: "Contact message not found"
+        });
+    }
+
+    return res.status(200).json({
         success: true,
-        // count: categories.length,
-        // data: categories
+        data: contactMessage
     });
 });
 
-const markAsRead = asyncHandler(async (req, res, next) => {
 
-    res.status(200).json({
+// ==================== Mark As Read ====================
+
+const markAsRead = asyncHandler(async (req, res) => {
+
+    const { id } = req.params;
+
+    const contactMessage = await Contact.findById(id);
+
+    if (!contactMessage) {
+        return res.status(404).json({
+            success: false,
+            message: "Contact message not found"
+        });
+    }
+
+    contactMessage.isRead = true;
+
+    await contactMessage.save();
+
+    return res.status(200).json({
         success: true,
-        // count: categories.length,
-        // data: categories
+        message: "Contact message marked as read",
+        data: contactMessage
     });
 });
 
-const deleteContactMessage = asyncHandler(async (req, res, next) => {
 
-    res.status(200).json({
+// ==================== Delete Contact Message ====================
+
+const deleteContactMessage = asyncHandler(async (req, res) => {
+
+    const { id } = req.params;
+
+    const contactMessage = await Contact.findById(id);
+
+    if (!contactMessage) {
+        return res.status(404).json({
+            success: false,
+            message: "Contact message not found"
+        });
+    }
+
+    await contactMessage.deleteOne();
+
+    return res.status(200).json({
         success: true,
-        // count: categories.length,
-        // data: categories
+        message: "Contact message deleted successfully",
+        data: null
     });
 });
+
 
 module.exports = {
     createContactMessage,
     getAllContactMessages,
     getContactMessageById,
     markAsRead,
-    deleteContactMessage,
-}
+    deleteContactMessage
+};
