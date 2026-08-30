@@ -25,7 +25,7 @@ const UserSchema = new mongoose.Schema(
             unique: true,
             sparse: true
         },
-        
+
         role: {
             type: String,
             enum: ["admin", "user"],
@@ -37,12 +37,12 @@ const UserSchema = new mongoose.Schema(
             default: false
         },
 
-        verificationToken: {
+        verificationOTP: {
             type: String,
             select: false
         },
 
-        verificationTokenExpires: {
+        verificationOTPExpires: {
             type: Date,
             select: false
         },

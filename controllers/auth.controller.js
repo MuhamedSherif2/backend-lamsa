@@ -7,8 +7,14 @@ const generateToken = require("../utils/generateToken");
 const sendEmail = require("../utils/sendEmail");
 
 
-const register = asyncHandler(async (req, res, next) => {
-    const { name, email, phoneNumber, password } = req.body
+const register = asyncHandler(async (req, res) => {
+    const {
+        name,
+        email,
+        phoneNumber,
+        password
+    } = req.body;
+
     if (!name || !email || !password) {
         return res.status(400).json({
             success: false,
@@ -30,42 +36,51 @@ const register = asyncHandler(async (req, res, next) => {
         });
     }
 
-    const verificationToken = crypto.randomBytes(32).toString("hex");
+    // Generate 6-digit OTP
+    const otp = Math.floor(
+        100000 + Math.random() * 900000
+    ).toString();
 
+    // Hash OTP before saving
+    const hashedOTP = crypto
+        .createHash("sha256")
+        .update(otp)
+        .digest("hex");
 
     const user = await User.create({
         name,
         email,
         phoneNumber,
         password,
-        verificationToken: crypto
-            .createHash("sha256")
-            .update(verificationToken)
-            .digest("hex"),
-        verificationTokenExpires: Date.now() + 10 * 60 * 1000
-    });
 
-    const verificationUrl = `http://localhost:5000/api/auth/verify-email/${verificationToken}`;;
+        verificationOTP: hashedOTP,
+        verificationOTPExpires: Date.now() + 10 * 60 * 1000
+    });
 
     await sendEmail({
         email: user.email,
         subject: "Verify Your Email",
         html: `
             <h2>Welcome ${user.name}</h2>
-            <p>Please verify your email address by clicking the link below:</p>
-            <a href="${verificationUrl}">
-                Verify Email
-            </a>
-            <p>This link will expire in 10 minutes.</p>
+
+            <p>
+                Your email verification code is:
+            </p>
+
+            <h1 style="letter-spacing: 5px;">
+                ${otp}
+            </h1>
+
+            <p>
+                This OTP will expire in 10 minutes.
+            </p>
         `
     });
 
-
     return res.status(201).json({
         success: true,
-        message: "Registration successful. Please verify your email."
+        message: "Registration successful. OTP sent to your email."
     });
-
 });
 
 const login = asyncHandler(async (req, res) => {
@@ -228,38 +243,47 @@ const resetPassword = asyncHandler(async (req, res) => {
 });
 
 const verifyEmail = asyncHandler(async (req, res) => {
-    const { token } = req.params;
+    const { email, otp } = req.body;
 
-    if (!token) {
+    if (!email || !otp) {
         return res.status(400).json({
             success: false,
-            message: "Verification token is required",
-            data: null
+            message: "Email and OTP are required"
         });
     }
 
-    const hashedToken = crypto
+    if (!/^\d{6}$/.test(otp)) {
+        return res.status(400).json({
+            success: false,
+            message: "OTP must be 6 digits"
+        });
+    }
+
+    const hashedOTP = crypto
         .createHash("sha256")
-        .update(token)
+        .update(otp)
         .digest("hex");
 
     const user = await User.findOne({
-        verificationToken: hashedToken,
-        verificationTokenExpires: { $gt: Date.now() },
+        email,
+        verificationOTP: hashedOTP,
+        verificationOTPExpires: {
+            $gt: Date.now()
+        },
         isDeleted: false
-    });
+    }).select("+verificationOTP");
 
     if (!user) {
         return res.status(400).json({
             success: false,
-            message: "Invalid or expired verification token",
-            data: null
+            message: "Invalid or expired OTP"
         });
     }
 
     user.isVerified = true;
-    user.verificationToken = undefined;
-    user.verificationTokenExpires = undefined;
+
+    user.verificationOTP = undefined;
+    user.verificationOTPExpires = undefined;
 
     await user.save();
 
