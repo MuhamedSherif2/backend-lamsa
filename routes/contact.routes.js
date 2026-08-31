@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const { createContactMessage, deleteContactMessage,getAllContactMessages,getContactMessageById,markAsRead } = require('../controllers/contact.controller')
+const { createContactMessage, deleteContactMessage, getAllContactMessages, getContactMessageById, markAsRead } = require('../controllers/contact.controller')
 const { protect } = require('../middlewares/auth')
 const { isAdmin } = require('../middlewares/isAdmin')
 

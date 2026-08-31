@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const { createFAQ,deleteFAQ,getAllFAQs,updateFAQ } = require('../controllers/faq.controller')
+const { createFAQ, deleteFAQ, getAllFAQs, updateFAQ } = require('../controllers/faq.controller')
 const { protect } = require('../middlewares/auth')
 const { isAdmin } = require('../middlewares/isAdmin')
 

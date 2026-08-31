@@ -55,12 +55,11 @@ const getAllCategories = asyncHandler(async (req, res) => {
 });
 
 
-const getCategoryById = asyncHandler(async (req, res) => {
-
-    const { id } = req.params;
+const getCategoryBySlug = asyncHandler(async (req, res) => {
+    const { slug } = req.params;
 
     const category = await Category.findOne({
-        _id: id,
+        slug,
         isDeleted: false
     });
 
@@ -76,7 +75,6 @@ const getCategoryById = asyncHandler(async (req, res) => {
         data: category
     });
 });
-
 
 const updateCategory = asyncHandler(async (req, res) => {
 
@@ -159,7 +157,7 @@ const deleteCategory = asyncHandler(async (req, res) => {
 module.exports = {
     createCategory,
     getAllCategories,
-    getCategoryById,
+    getCategoryBySlug,
     updateCategory,
     deleteCategory
 };

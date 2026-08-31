@@ -8,8 +8,8 @@ router.get("/", getAllProducts);
 router.get("/slug/:slug", getProductBySlug);
 router.get("/:id", getProductById);
 
-router.post("/", protect, isAdmin, upload.array("images", 5), createProduct); 
-router.put( "/:id", protect, isAdmin, upload.array("images", 5), updateProduct);
+router.post("/", protect, isAdmin, upload.array("images", 5), createProduct);
+router.put("/:id", protect, isAdmin, upload.array("images", 5), updateProduct);
 router.delete("/:id", protect, isAdmin, deleteProduct);
 
 module.exports = router
