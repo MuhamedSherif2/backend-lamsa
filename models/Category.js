@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const imageSchema = require("./schemas/image.schema");
 
 const categorySchema = new mongoose.Schema({
     name: {
@@ -14,6 +15,11 @@ const categorySchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true
+    },
+
+    image: {
+        type: imageSchema,
+        required: true
     },
 
     isDeleted: {

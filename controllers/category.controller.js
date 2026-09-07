@@ -4,15 +4,19 @@ const Category = require("../models/Category");
 
 const slugify = require("../utils/slugify");
 
+const uploadToCloudinary = require("../utils/uploadCloudinary");
+
+
+// ==================== Create Category ====================
 
 const createCategory = asyncHandler(async (req, res) => {
 
     const { name } = req.body;
 
-    if (!name) {
+    if (!name || !req.file) {
         return res.status(400).json({
             success: false,
-            message: "Category name is required"
+            message: "Category name and image are required"
         });
     }
 
@@ -28,9 +32,15 @@ const createCategory = asyncHandler(async (req, res) => {
         });
     }
 
+    const image = await uploadToCloudinary(
+        req.file.buffer,
+        "ecommerce/categories"
+    );
+
     const category = await Category.create({
         name: name.trim(),
-        slug: slugify(name)
+        slug: slugify(name),
+        image
     });
 
     return res.status(201).json({
@@ -40,6 +50,8 @@ const createCategory = asyncHandler(async (req, res) => {
     });
 });
 
+
+// ==================== Get All Categories ====================
 
 const getAllCategories = asyncHandler(async (req, res) => {
 
@@ -55,7 +67,10 @@ const getAllCategories = asyncHandler(async (req, res) => {
 });
 
 
+// ==================== Get Category By Slug ====================
+
 const getCategoryBySlug = asyncHandler(async (req, res) => {
+
     const { slug } = req.params;
 
     const category = await Category.findOne({
@@ -75,6 +90,9 @@ const getCategoryBySlug = asyncHandler(async (req, res) => {
         data: category
     });
 });
+
+
+// ==================== Update Category ====================
 
 const updateCategory = asyncHandler(async (req, res) => {
 
@@ -116,6 +134,17 @@ const updateCategory = asyncHandler(async (req, res) => {
     category.name = name.trim();
     category.slug = slugify(name);
 
+    // Update image if new image is uploaded
+    if (req.file) {
+
+        const image = await uploadToCloudinary(
+            req.file.buffer,
+            "ecommerce/categories"
+        );
+
+        category.image = image;
+    }
+
     await category.save();
 
     return res.status(200).json({
@@ -125,6 +154,8 @@ const updateCategory = asyncHandler(async (req, res) => {
     });
 });
 
+
+// ==================== Delete Category ====================
 
 const deleteCategory = asyncHandler(async (req, res) => {
 
