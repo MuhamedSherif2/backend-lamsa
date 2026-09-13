@@ -7,6 +7,6 @@ const { isAdmin } = require("../middlewares/isAdmin");
 
 router.get("/", getStoreSettings);
 router.post("/", protect, isAdmin, addStoreSettings);
-router.put("/", protect, isAdmin, updateStoreSettings);
+router.put("/:id", protect, isAdmin, updateStoreSettings);
 
 module.exports = router;

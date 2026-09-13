@@ -45,11 +45,17 @@ const OrderSchema = new mongoose.Schema(
         },
         items: [OrderItemSchema],
         shippingAddress: {
-            fullName: { type: String, required: true },
+            fullName:    { type: String, required: true },
             phoneNumber: { type: String, required: true },
-            city: { type: String, required: true },
-            address: { type: String, required: true },
-            notes: { type: String }
+            country:     { type: String, required: true, default: "Egypt" },
+            governorate: { type: String, required: true },
+            city:        { type: String, required: true },
+            area:        { type: String },
+            street:      { type: String, required: true },
+            building:    { type: String },
+            apartment:   { type: String },
+            postalCode:  { type: String },
+            notes:       { type: String }
         },
         paymentMethod: {
             type: String,

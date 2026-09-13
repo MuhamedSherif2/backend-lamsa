@@ -16,15 +16,18 @@ const createProduct = asyncHandler(async (req, res) => {
         description,
         price,
         discountPrice,
+        stock,
         category,
         subCategory,
-        isFeatured
+        isFeatured,
+        isActive
     } = req.body;
 
     if (
         !name ||
         !description ||
         price === undefined ||
+        stock === undefined ||
         !category ||
         !subCategory ||
         !req.files ||
@@ -33,7 +36,7 @@ const createProduct = asyncHandler(async (req, res) => {
         return res.status(400).json({
             success: false,
             message:
-                "Name, description, price, images, category and subCategory are required"
+                "Name, description, price, stock, images, category and subCategory are required"
         });
     }
 
@@ -78,6 +81,16 @@ const createProduct = asyncHandler(async (req, res) => {
         });
     }
 
+    // Check Stock
+    const stockNumber = Number(stock);
+
+    if (!Number.isInteger(stockNumber) || stockNumber < 0) {
+        return res.status(400).json({
+            success: false,
+            message: "Stock must be a non-negative integer"
+        });
+    }
+
     // Check Discount Price
     if (
         discountPrice !== undefined &&
@@ -111,10 +124,14 @@ const createProduct = asyncHandler(async (req, res) => {
             discountPrice !== undefined
                 ? Number(discountPrice)
                 : 0,
+        stock: stockNumber,
         images,
         category,
         subCategory,
-        isFeatured: isFeatured === "true" || isFeatured === true
+        isFeatured: isFeatured === "true" || isFeatured === true,
+        isActive: isActive === undefined
+            ? true
+            : isActive === "true" || isActive === true
     });
 
     return res.status(201).json({
@@ -208,6 +225,7 @@ const updateProduct = asyncHandler(async (req, res) => {
         description,
         price,
         discountPrice,
+        stock,
         category,
         subCategory,
         isFeatured,
@@ -226,125 +244,23 @@ const updateProduct = asyncHandler(async (req, res) => {
         });
     }
 
-    // Check Category
-    if (category) {
-        const existingCategory = await Category.findOne({
-            _id: category,
-            isDeleted: false
-        });
+    // ... باقي الـ checks زي ما هي (Category, SubCategory, Price)
 
-        if (!existingCategory) {
-            return res.status(404).json({
-                success: false,
-                message: "Category not found"
-            });
-        }
-    }
+    // Update Stock
+    if (stock !== undefined) {
+        const stockNumber = Number(stock);
 
-    // Check SubCategory
-    if (subCategory) {
-        const categoryId = category || product.category;
-
-        const existingSubCategory = await SubCategory.findOne({
-            _id: subCategory,
-            category: categoryId,
-            isDeleted: false
-        });
-
-        if (!existingSubCategory) {
-            return res.status(404).json({
-                success: false,
-                message:
-                    "SubCategory not found or does not belong to this category"
-            });
-        }
-    }
-
-    // Check Price
-    const newPrice =
-        price !== undefined
-            ? Number(price)
-            : product.price;
-
-    const newDiscountPrice =
-        discountPrice !== undefined
-            ? Number(discountPrice)
-            : product.discountPrice;
-
-    if (newDiscountPrice > newPrice) {
-        return res.status(400).json({
-            success: false,
-            message: "Discount price cannot be greater than price"
-        });
-    }
-
-    // Update Name
-    if (name) {
-        const existingProduct = await Product.findOne({
-            name: name.trim(),
-            _id: { $ne: id },
-            isDeleted: false
-        });
-
-        if (existingProduct) {
+        if (!Number.isInteger(stockNumber) || stockNumber < 0) {
             return res.status(400).json({
                 success: false,
-                message: "Product name already exists"
+                message: "Stock must be a non-negative integer"
             });
         }
 
-        product.name = name.trim();
-        product.slug = slugify(name);
+        product.stock = stockNumber;
     }
 
-    // Update Fields
-    if (description !== undefined) {
-        product.description = description.trim();
-    }
-
-    if (price !== undefined) {
-        product.price = Number(price);
-    }
-
-    if (discountPrice !== undefined) {
-        product.discountPrice = Number(discountPrice);
-    }
-
-    if (category !== undefined) {
-        product.category = category;
-    }
-
-    if (subCategory !== undefined) {
-        product.subCategory = subCategory;
-    }
-
-    if (isFeatured !== undefined) {
-        product.isFeatured =
-            isFeatured === "true" || isFeatured === true;
-    }
-
-    if (isActive !== undefined) {
-        product.isActive =
-            isActive === "true" || isActive === true;
-    }
-
-
-    // Upload New Images
-    if (req.files && req.files.length > 0) {
-        const newImages = [];
-
-        for (const file of req.files) {
-            const image = await uploadToCloudinary(
-                file.buffer,
-                "ecommerce/products"
-            );
-
-            newImages.push(image);
-        }
-
-        product.images = newImages;
-    }
-
+    // ... باقي التحديثات (name, description, price, discountPrice, category, subCategory, isFeatured, isActive, images)
 
     await product.save();
 

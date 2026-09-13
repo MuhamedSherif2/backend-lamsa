@@ -1,6 +1,7 @@
 const asyncHandler = require("../middlewares/asyncHandler");
 
 const Cart = require("../models/Cart");
+
 const Product = require("../models/Product");
 
 
@@ -38,7 +39,7 @@ const getCart = asyncHandler(async (req, res) => {
 
 const addToCart = asyncHandler(async (req, res) => {
 
-    const { productId, quantity } = req.body;
+    const { productId, quantity, size, color } = req.body;
 
     if (!productId) {
         return res.status(400).json({
@@ -58,7 +59,6 @@ const addToCart = asyncHandler(async (req, res) => {
         });
     }
 
-    // Check Product
     const product = await Product.findOne({
         _id: productId,
         isDeleted: false,
@@ -72,32 +72,34 @@ const addToCart = asyncHandler(async (req, res) => {
         });
     }
 
-    // Get Product Price
     const productPrice =
         product.discountPrice > 0
             ? product.discountPrice
             : product.price;
 
-    // Find Cart
     let cart = await Cart.findOne({
         user: req.user._id
     });
 
-    // Create Cart
+    // Create cart if not exists
     if (!cart) {
 
         const subTotal = productPrice * itemQuantity;
 
         cart = await Cart.create({
             user: req.user._id,
+
             items: [
                 {
                     product: productId,
                     quantity: itemQuantity,
                     price: productPrice,
-                    subTotal
+                    subTotal,
+                    size,
+                    color
                 }
             ],
+
             totalPrice: subTotal
         });
 
@@ -113,9 +115,12 @@ const addToCart = asyncHandler(async (req, res) => {
         });
     }
 
-    // Check if product already exists
+    // Check same product + same size + same color
     const existingItem = cart.items.find(
-        item => item.product.toString() === productId.toString()
+        item =>
+            item.product.toString() === productId.toString() &&
+            item.size === size &&
+            item.color === color
     );
 
     if (existingItem) {
@@ -133,11 +138,12 @@ const addToCart = asyncHandler(async (req, res) => {
             product: productId,
             quantity: itemQuantity,
             price: productPrice,
-            subTotal: productPrice * itemQuantity
+            subTotal: productPrice * itemQuantity,
+            size,
+            color
         });
     }
 
-    // Recalculate Total
     cart.totalPrice = cart.items.reduce(
         (total, item) => total + item.subTotal,
         0
@@ -162,12 +168,14 @@ const addToCart = asyncHandler(async (req, res) => {
 
 const updateCartItemQuantity = asyncHandler(async (req, res) => {
 
-    const { productId, quantity } = req.body;
+    const { id } = req.params;
 
-    if (!productId || quantity === undefined) {
+    const { productId, quantity, size, color } = req.body;
+
+    if (!id || !productId || quantity === undefined) {
         return res.status(400).json({
             success: false,
-            message: "Product ID and quantity are required"
+            message: "Cart ID, Product ID and quantity are required"
         });
     }
 
@@ -181,6 +189,7 @@ const updateCartItemQuantity = asyncHandler(async (req, res) => {
     }
 
     const cart = await Cart.findOne({
+        _id: id,
         user: req.user._id
     });
 
@@ -192,7 +201,10 @@ const updateCartItemQuantity = asyncHandler(async (req, res) => {
     }
 
     const item = cart.items.find(
-        item => item.product.toString() === productId.toString()
+        item =>
+            item.product.toString() === productId.toString() &&
+            item.size === size &&
+            item.color === color
     );
 
     if (!item) {
@@ -202,7 +214,6 @@ const updateCartItemQuantity = asyncHandler(async (req, res) => {
         });
     }
 
-    // Get current Product
     const product = await Product.findOne({
         _id: productId,
         isDeleted: false,
@@ -222,10 +233,11 @@ const updateCartItemQuantity = asyncHandler(async (req, res) => {
             : product.price;
 
     item.quantity = newQuantity;
+
     item.price = productPrice;
+
     item.subTotal = newQuantity * productPrice;
 
-    // Recalculate Total
     cart.totalPrice = cart.items.reduce(
         (total, item) => total + item.subTotal,
         0
@@ -245,12 +257,13 @@ const updateCartItemQuantity = asyncHandler(async (req, res) => {
     });
 });
 
-
 // ==================== Remove From Cart ====================
 
 const removeFromCart = asyncHandler(async (req, res) => {
 
     const { productId } = req.params;
+
+    const { size, color } = req.query;
 
     if (!productId) {
         return res.status(400).json({
@@ -271,7 +284,10 @@ const removeFromCart = asyncHandler(async (req, res) => {
     }
 
     const itemExists = cart.items.some(
-        item => item.product.toString() === productId.toString()
+        item =>
+            item.product.toString() === productId.toString() &&
+            item.size === size &&
+            item.color === color
     );
 
     if (!itemExists) {
@@ -282,10 +298,14 @@ const removeFromCart = asyncHandler(async (req, res) => {
     }
 
     cart.items = cart.items.filter(
-        item => item.product.toString() !== productId.toString()
+        item =>
+            !(
+                item.product.toString() === productId.toString() &&
+                item.size === size &&
+                item.color === color
+            )
     );
 
-    // Recalculate Total
     cart.totalPrice = cart.items.reduce(
         (total, item) => total + item.subTotal,
         0
@@ -310,7 +330,10 @@ const removeFromCart = asyncHandler(async (req, res) => {
 
 const clearCart = asyncHandler(async (req, res) => {
 
+    const { id } = req.params;
+
     const cart = await Cart.findOne({
+        _id: id,
         user: req.user._id
     });
 
@@ -322,6 +345,7 @@ const clearCart = asyncHandler(async (req, res) => {
     }
 
     cart.items = [];
+
     cart.totalPrice = 0;
 
     await cart.save();

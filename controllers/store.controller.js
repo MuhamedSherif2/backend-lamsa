@@ -91,7 +91,11 @@ const getStoreSettings = asyncHandler(async (req, res) => {
 
 // ==================== Update Store Settings ====================
 
+// ==================== Update Store Settings ====================
+
 const updateStoreSettings = asyncHandler(async (req, res) => {
+
+    const { id } = req.params;
 
     const {
         name,
@@ -106,7 +110,9 @@ const updateStoreSettings = asyncHandler(async (req, res) => {
         returnPolicy
     } = req.body;
 
-    const store = await Store.findOne();
+    const store = await Store.findOne({
+        _id: id
+    });
 
     if (!store) {
         return res.status(404).json({

@@ -25,12 +25,6 @@ const ProductSchema = new mongoose.Schema(
             trim: true
         },
 
-        // brand: {
-        //     type: String,
-        //     trim: true,
-        //     maxlength: 100
-        // },
-
         price: {
             type: Number,
             required: true,
@@ -39,6 +33,13 @@ const ProductSchema = new mongoose.Schema(
 
         discountPrice: {
             type: Number,
+            default: 0,
+            min: 0
+        },
+
+        stock: {
+            type: Number,
+            required: true,
             default: 0,
             min: 0
         },

@@ -17,7 +17,6 @@ const createOrder = asyncHandler(async (req, res) => {
     } = req.body;
 
     // Validate Shipping Address
-
     if (
         !shippingAddress ||
         !shippingAddress.fullName ||
@@ -33,7 +32,6 @@ const createOrder = asyncHandler(async (req, res) => {
     }
 
     // Validate Payment Method
-
     if (
         paymentMethod &&
         !["CashOnDelivery", "CreditCard"].includes(paymentMethod)
@@ -45,10 +43,7 @@ const createOrder = asyncHandler(async (req, res) => {
     }
 
     // Get User Cart
-
-    const cart = await Cart.findOne({
-        user: req.user._id
-    });
+    const cart = await Cart.findOne({ user: req.user._id });
 
     if (!cart || cart.items.length === 0) {
         return res.status(400).json({
@@ -58,7 +53,6 @@ const createOrder = asyncHandler(async (req, res) => {
     }
 
     // Check Products
-
     const productIds = cart.items.map(item => item.product);
 
     const products = await Product.find({
@@ -74,13 +68,25 @@ const createOrder = asyncHandler(async (req, res) => {
         });
     }
 
-    // Create Order Items
+    // ✅ Check Stock for each item
+    for (const item of cart.items) {
+        const product = products.find(
+            p => p._id.toString() === item.product.toString()
+        );
 
+        if (product.stock < item.quantity) {
+            return res.status(400).json({
+                success: false,
+                message: `Insufficient stock for "${product.name}". Available: ${product.stock}`
+            });
+        }
+    }
+
+    // Create Order Items
     const orderItems = cart.items.map(item => {
 
         const product = products.find(
-            product =>
-                product._id.toString() === item.product.toString()
+            p => p._id.toString() === item.product.toString()
         );
 
         return {
@@ -88,34 +94,30 @@ const createOrder = asyncHandler(async (req, res) => {
             quantity: item.quantity,
             price: product.discountPrice > 0
                 ? product.discountPrice
-                : product.price
+                : product.price,
+            size: item.size,
+            color: item.color
         };
     });
 
     // Calculate Total Price
-
     const totalPrice = orderItems.reduce(
-        (total, item) =>
-            total + item.price * item.quantity,
+        (total, item) => total + item.price * item.quantity,
         0
     );
 
     // Apply Coupon
-
     let discountAmount = 0;
     let appliedCouponCode;
 
     if (couponCode) {
-
         const code = couponCode.trim().toUpperCase();
 
         const coupon = await Coupon.findOne({
             code,
             isActive: true,
             isDeleted: false,
-            expireDate: {
-                $gt: new Date()
-            }
+            expireDate: { $gt: new Date() }
         });
 
         if (!coupon) {
@@ -132,39 +134,32 @@ const createOrder = asyncHandler(async (req, res) => {
     }
 
     // Calculate Final Price
-
     const finalPrice = totalPrice - discountAmount;
 
-    // Create Order
+    // ✅ Decrement Stock
+    for (const item of cart.items) {
+        await Product.findByIdAndUpdate(item.product, {
+            $inc: { stock: -item.quantity }
+        });
+    }
 
+    // Create Order
     const order = await Order.create({
         user: req.user._id,
-
         items: orderItems,
-
         shippingAddress,
-
-        paymentMethod:
-            paymentMethod || "CashOnDelivery",
-
+        paymentMethod: paymentMethod || "CashOnDelivery",
         isPaid: false,
-
         totalPrice,
-
         discountAmount,
-
         couponCode: appliedCouponCode,
-
         finalPrice,
-
         orderStatus: "Pending"
     });
 
     // Clear Cart
-
     cart.items = [];
     cart.totalPrice = 0;
-
     await cart.save();
 
     const populatedOrder = await Order.findById(order._id)
@@ -177,7 +172,6 @@ const createOrder = asyncHandler(async (req, res) => {
         data: populatedOrder
     });
 });
-
 
 // ==================== Get My Orders ====================
 
@@ -359,7 +353,6 @@ const cancelOrder = asyncHandler(async (req, res) => {
         });
     }
 
-    // Customer cannot cancel after order is shipped
     if (
         order.orderStatus === "Shipped" ||
         order.orderStatus === "Delivered" ||
@@ -371,8 +364,14 @@ const cancelOrder = asyncHandler(async (req, res) => {
         });
     }
 
-    order.orderStatus = "Cancelled";
+    // ✅ Restore Stock
+    for (const item of order.items) {
+        await Product.findByIdAndUpdate(item.product, {
+            $inc: { stock: item.quantity }
+        });
+    }
 
+    order.orderStatus = "Cancelled";
     await order.save();
 
     return res.status(200).json({
@@ -381,7 +380,6 @@ const cancelOrder = asyncHandler(async (req, res) => {
         data: order
     });
 });
-
 module.exports = {
     createOrder,
     getMyOrders,
