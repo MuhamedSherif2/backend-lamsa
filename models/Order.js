@@ -25,11 +25,6 @@ const OrderItemSchema = new mongoose.Schema(
             type: String,
             trim: true
         },
-        couponCode: {
-            type: String,
-            trim: true,
-            uppercase: true
-        },
     },
     {
         _id: false
@@ -78,6 +73,11 @@ const OrderSchema = new mongoose.Schema(
             type: Number,
             default: 0,
             min: 0
+        },
+        couponCode: {
+            type: String,
+            trim: true,
+            uppercase: true
         },
         finalPrice: {
             type: Number,

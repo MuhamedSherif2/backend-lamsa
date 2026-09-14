@@ -21,13 +21,14 @@ const createOrder = asyncHandler(async (req, res) => {
         !shippingAddress ||
         !shippingAddress.fullName ||
         !shippingAddress.phoneNumber ||
+        !shippingAddress.governorate ||
         !shippingAddress.city ||
-        !shippingAddress.address
+        !shippingAddress.street
     ) {
         return res.status(400).json({
             success: false,
             message:
-                "Full name, phone number, city and address are required"
+                "Full name, phone number, governorate, city and street are required"
         });
     }
 
