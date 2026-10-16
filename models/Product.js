@@ -11,6 +11,28 @@ const ProductSchema = new mongoose.Schema(
             maxlength: 200
         },
 
+        sizes: {
+            type: [String],
+            required: true,
+            validate: {
+                validator: (sizes) =>
+                    sizes.length > 0 &&
+                    sizes.every((size) => size.trim().length > 0),
+                message: "Product must have at least one valid size"
+            }
+        },
+
+        colors: {
+            type: [String],
+            required: true,
+            validate: {
+                validator: (colors) =>
+                    colors.length > 0 &&
+                    colors.every((color) => color.trim().length > 0),
+                message: "Product must have at least one valid color"
+            }
+        },
+
         slug: {
             type: String,
             required: true,
